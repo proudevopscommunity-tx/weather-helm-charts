@@ -1,8 +1,8 @@
 # helm-charts for weather app
 # Every directory manages secrets with a different technology:
-asm: AWS SECRETS MANAGER
-hvault-static: HASHICORP VAULT STATIC SECRETS
-seal-secrets: BITNAMI SEALED SECRETS
+# - asm: AWS SECRETS MANAGER
+# - hvault-static: HASHICORP VAULT STATIC SECRETS
+# - seal-secrets: BITNAMI SEALED SECRETS
 
 .
 ├── README.md
