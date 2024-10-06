@@ -1,4 +1,4 @@
-{{/*
+
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "weather.fullname" . | printf "%s-ui" -}}
 {{- $svcPort := .Values.service.port_ui -}}
@@ -37,7 +37,7 @@ spec:
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ .host }}
       http:
         paths:
           {{- range .paths }}
@@ -58,4 +58,3 @@ spec:
           {{- end }}
     {{- end }}
 {{- end }}
-*/}}

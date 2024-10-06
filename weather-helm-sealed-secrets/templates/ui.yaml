@@ -41,6 +41,44 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port_ui }}
               protocol: TCP
+          env:
+            - name: AUTH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: AUTH_HOST
+            - name: AUTH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: AUTH_PORT
+            - name: WEATHER_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: WEATHER_HOST
+            - name: WEATHER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: WEATHER_PORT
+            - name: REDIS_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: REDIS_USER
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap
+                  key: REDIS_HOST
+
+
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
