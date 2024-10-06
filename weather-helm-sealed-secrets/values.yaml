@@ -1,14 +1,22 @@
-# Default values for weather-helm.
+# Default values for weather.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: nginx
-  pullPolicy: IfNotPresent
+  repository_ui: proudevops/ui-weather
+  repository_redis: proudevops/redis
+  repository_weather: proudevops/weather
+  repository_auth: proudevops/auth
+  repository_db: proudevops/db
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag_ui: latest
+  tag_redis: latest
+  tag_weather: latest
+  tag_auth: latest
+  tag_db: latest
 
 imagePullSecrets: []
 nameOverride: ""
@@ -40,20 +48,41 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
+  type_ui: NodePort
   type: ClusterIP
-  port: 80
+  port_ui: 3000
+  target_port_ui: 3000
+  port-auth: 8080
+  port-weather: 5000
+  port-redis: 6379
+  port-db: 3306
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  className: alb   #my-aws-ingress-class
+  annotations: 
+    alb.ingress.kubernetes.io/load_balancer_name: external-dns-ingress
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Heath check settings
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP 
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port  
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+    # SSL settings
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # External dns settings
+    external-dns.alpha.kubernetes.io/hostname: default.tclovis.com,ui.tclovis.com
   hosts:
-    - host: chart-example.local
+    - host: ui.tclovis.com
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Prefix
+          
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
@@ -70,6 +99,15 @@ resources: {}
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
+
+# livenessProbe:
+#   httpGet:
+#     path: /
+#     port: http
+# readinessProbe:
+#   httpGet:
+#     path: /
+#     port: http
 
 autoscaling:
   enabled: false
