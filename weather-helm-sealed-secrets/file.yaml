@@ -101,7 +101,7 @@ metadata:
     app.kubernetes.io/version: "1.16.0"
     app.kubernetes.io/managed-by: Helm
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 3000
       targetPort: 3000
@@ -248,37 +248,37 @@ spec:
             - name: AUTH_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
+                  name: app-configmap 
                   key: AUTH_HOST
             - name: AUTH_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
+                  name: app-configmap 
                   key: AUTH_PORT
             - name: WEATHER_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
+                  name: app-configmap 
                   key: WEATHER_HOST
             - name: WEATHER_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
+                  name: app-configmap 
                   key: WEATHER_PORT
             - name: REDIS_USER
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
+                  name: app-configmap 
                   key: REDIS_USER
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: app-secrets 
                   key: REDIS_PASSWORD
             - name: REDIS_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap
+                  name: app-configmap 
                   key: REDIS_HOST
 
 
@@ -403,7 +403,7 @@ metadata:
     alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
     external-dns.alpha.kubernetes.io/hostname: default.tclovis.com,ui.tclovis.com
 spec:
-  ingressClassName: alb
+  ingressClassName: my-aws-ingress-class
   rules:
     - host: ui.tclovis.com
       http:

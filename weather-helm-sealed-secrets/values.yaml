@@ -48,7 +48,7 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type_ui: NodePort
+  type_ui: ClusterIP
   type: ClusterIP
   port_ui: 3000
   target_port_ui: 3000
@@ -59,7 +59,7 @@ service:
 
 ingress:
   enabled: true
-  className: alb   #my-aws-ingress-class
+  className: my-aws-ingress-class #alb
   annotations: 
     alb.ingress.kubernetes.io/load_balancer_name: external-dns-ingress
     alb.ingress.kubernetes.io/scheme: internet-facing
@@ -128,7 +128,17 @@ volumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
-env_ui:
+env:
+  configmap_name: app-configmap
+  secret_name: app-secrets
+  auth_host: AUTH_HOST
+  auth_port: AUTH_PORT
+  weather_host: WEATHER_HOST
+  weather_port: WEATHER_PORT
+  redis_user: REDIS_USER
+  redis_host: REDIS_HOST
+  redis_password: REDIS_PASSWORD
+
 
 nodeSelector: {}
 

@@ -42,41 +42,41 @@ spec:
               containerPort: {{ .Values.service.port_ui }}
               protocol: TCP
           env:
-            - name: AUTH_HOST
+            - name: {{ .Values.env.auth_host }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
-                  key: AUTH_HOST
-            - name: AUTH_PORT
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.auth_host }}
+            - name: {{ .Values.env.auth_port }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
-                  key: AUTH_PORT
-            - name: WEATHER_HOST
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.auth_port }}
+            - name: {{ .Values.env.weather_host }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
-                  key: WEATHER_HOST
-            - name: WEATHER_PORT
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.weather_host }}
+            - name: {{ .Values.env.weather_port }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
-                  key: WEATHER_PORT
-            - name: REDIS_USER
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.weather_port }}
+            - name: {{ .Values.env.redis_user }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
-                  key: REDIS_USER
-            - name: REDIS_PASSWORD
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.redis_user }}
+            - name: {{ .Values.env.redis_password }}
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
-                  key: REDIS_PASSWORD
-            - name: REDIS_HOST
+                  name: {{ .Values.env.secret_name }} 
+                  key: {{ .Values.env.redis_password }}
+            - name: {{ .Values.env.redis_host }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap
-                  key: REDIS_HOST
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.redis_host }}
 
 
           livenessProbe:
