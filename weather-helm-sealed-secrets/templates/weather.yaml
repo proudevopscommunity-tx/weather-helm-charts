@@ -1,46 +1,59 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: alpha-weather
+  name: {{ include "weather.fullname" . }}-weather
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+    {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: alpha-weather
+      {{- include "weather.selectorLabels" . | nindent 6 }}-weather
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: alpha-weather
+        {{- include "weather.labels" . | replace .Release.Name (printf "%s-weather" .Release.Name) | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       initContainers:
         - name: init-db
           image: busybox:1.31
           command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z db 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";']
       containers:
-        - name: alpha-weather
-          image: proudevops/weather:1.0.1 # leonardtia/weather:latest
-          imagePullPolicy: Always  # Set the image pull policy to Always
+        - name: {{ .Chart.Name }}-weather
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository_weather }}:{{ .Values.image.tag_weather | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: APIKEY
+            - name: {{ .Values.env.api_key }}
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets     
-                  key: APIKEY
+                  name: {{ .Values.env.secret_name }}    
+                  key: {{ .Values.env.api_key }}
           ports:
-            - containerPort: 5000
+            - containerPort: {{ .Values.service.port_weather }}
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: weather
-  annotations:
-    # alb.ingress.kubernetes.io/healthcheck-path: /index.html
+  name: {{ include "weather.fullname" . }}-weather
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
   selector:
-    app: alpha-weather
+    {{- include "weather.selectorLabels" . | nindent 4 }}-weather
   ports:
     - protocol: TCP
-      port: 5000
-      targetPort: 5000
+      port: {{ .Values.service.port_weather }}
+      targetPort: {{ .Values.service.port_weather }}
   type: ClusterIP

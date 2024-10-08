@@ -1,35 +1,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: alpha-auth
+  name: {{ include "weather.fullname" . }}-auth
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: alpha-auth
+      {{- include "weather.selectorLabels" . | nindent 6 }}-auth
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: alpha-auth
+        {{- include "weather.labels" . | replace .Release.Name (printf "%s-auth" .Release.Name) | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }} 
+
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: init-db
           image: busybox:1.31
           command: ['sh', '-c', 'echo -e "Checking for the availability of Weather Server deployment"; while ! nc -z weather 5000; do sleep 1; printf "-"; done; echo -e "  >> Weather Server has started";']
       containers:
-        - name: alpha-auth
-          image: proudevops/auth:latest  # leonardtia/auth:latest
-          imagePullPolicy: Always  # Set the image pull policy to Always
+        - name: {{ .Chart.Name }}-auth
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository_auth }}:{{ .Values.image.tag_auth | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: DB_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
+                  name: {{ .Values.env.configmap_name }}  
                   key: DB_HOST
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets     
+                  name: {{ .Values.env.secret_name }}     
                   key: DB_PASSWORD
             # ports:
             # - containerPort: 8080 
@@ -39,14 +57,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth
+  name: {{ include "weather.fullname" . }}-auth
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
   annotations:
     # alb.ingress.kubernetes.io/healthcheck-path: /index.html
 spec:
   selector:
-    app: alpha-auth
+    {{- include "weather.selectorLabels" . | nindent 4 }}-auth
   ports:
     - protocol: TCP
-      port: 8080
-      targetPort: 8080
-  type: ClusterIP
+      port: {{ .Values.service.port_auth }}
+      targetPort: {{ .Values.service.port_auth }}
+  type: {{ .Values.service.type }}

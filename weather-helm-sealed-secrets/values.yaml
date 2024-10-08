@@ -52,10 +52,10 @@ service:
   type: ClusterIP
   port_ui: 3000
   target_port_ui: 3000
-  port-auth: 8080
-  port-weather: 5000
-  port-redis: 6379
-  port-db: 3306
+  port_auth: 8080
+  port_weather: 5000
+  port_redis: 6379
+  port_db: 3306
 
 ingress:
   enabled: true
@@ -138,6 +138,9 @@ env:
   redis_user: REDIS_USER
   redis_host: REDIS_HOST
   redis_password: REDIS_PASSWORD
+  api_key: APIKEY
+
+
 
 
 nodeSelector: {}

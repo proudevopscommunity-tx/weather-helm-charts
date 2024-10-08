@@ -1,34 +1,54 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: alpha-redis
+  name: {{ include "weather.fullname" . }}-redis
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: alpha-redis
+      {{- include "weather.selectorLabels" . | nindent 6 }}-redis
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: alpha-redis
+        {{- include "weather.labels" . | replace .Release.Name (printf "%s-redis" .Release.Name) | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "weather.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: alpha-redis
-          image: proudevops/redis:latest  # leonardtia/redis:latest
-          imagePullPolicy: Always  # Set the image pull policy to Always
+        - name: {{ .Chart.Name }}-redis
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository_redis }}:{{ .Values.image.tag_redis | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: REDIS_USER
+            - name: {{ .Values.env.redis_user }}
               valueFrom:
                 configMapKeyRef:
-                  name: app-configmap  
-                  key: REDIS_USER
-            - name: REDIS_PASSWORD
+                  name: {{ .Values.env.configmap_name }} 
+                  key: {{ .Values.env.redis_user }}
+            - name: {{ .Values.env.redis_password }}
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
-                  key: REDIS_PASSWORD
+                  name: {{ .Values.env.secret_name }}
+                  key: {{ .Values.env.redis_password }}
           ports:
-            - containerPort: 6379
+            - containerPort: {{ .Values.service.port_redis }}
           volumeMounts:
             - name: redis-data
               mountPath: /data
@@ -41,12 +61,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis
+  name: {{ include "weather.fullname" . }}-redis
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
   selector:
-    app: alpha-redis
+    app:     {{- include "weather.selectorLabels" . | nindent 4 }}-redis
   ports:
     - protocol: TCP
-      port: 6379
-      targetPort: 6379
-  type: ClusterIP
+      port: {{ .Values.service.port_redis }}
+      targetPort: {{ .Values.service.port_redis }}
+  type: {{ .Values.service.type }}

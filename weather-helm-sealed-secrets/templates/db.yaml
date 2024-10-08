@@ -32,22 +32,40 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: alpha-db-statefulset
+  name: {{ include "weather.fullname" . }}-db
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      app: alpha-db
-  serviceName: alpha-db-service
-  replicas: 1
+     {{- include "weather.selectorLabels" . | nindent 6 }}-db
+  serviceName: {{ include "weather.fullname" . }}-db
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: alpha-db
+        {{- include "weather.labels" . | replace .Release.Name (printf "%s-db" .Release.Name) | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "weather.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: alpha-db
-          image: mysql:8.0.31  # devopseasylearning2021/s4-db:4649
-          imagePullPolicy: Always
+        - name: {{ .Chart.Name }}-db
+          image: "{{ .Values.image.repository_db }}:{{ .Values.image.tag_db | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
@@ -70,7 +88,7 @@ spec:
                   name: app-configmap
                   key: MYSQL_USER
           ports:
-            - containerPort: 3306
+            - containerPort: {{ .Values.service.port_db }}
           volumeMounts:
             - name: db-data
               mountPath: /var/lib/mysql
@@ -90,13 +108,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: db
+  name: {{ include "weather.fullname" . }}-db
+  labels:
+    {{- include "weather.labels" . | nindent 4 }}
 spec:
   selector:
-    app: alpha-db
+    {{- include "weather.selectorLabels" . | nindent 4 }}-db
   ports:
     - protocol: TCP
-      port: 3306
-      targetPort: 3306
-  type: ClusterIP
+      port: {{ .Values.service.port_db }}
+      targetPort: {{ .Values.service.port_db }}
+  type: {{ .Values.service.type }}
 
