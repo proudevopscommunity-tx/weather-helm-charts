@@ -4,4 +4,4 @@ myfile.yaml
 test.yaml
 secrets.yaml
 sealedSecret.crt
-sealedSecrets.yaml
+sealedsecrets.yaml
