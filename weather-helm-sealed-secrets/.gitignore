@@ -1,0 +1,7 @@
+# test files
+file.yaml
+myfile.yaml
+test.yaml
+secrets.yaml
+sealedSecret.crt
+sealedSecrets.yaml
