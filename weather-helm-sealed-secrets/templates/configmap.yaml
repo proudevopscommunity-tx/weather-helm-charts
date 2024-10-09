@@ -1,15 +1,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: app-configmap
+  name: {{ .Values.env.configmap_name }}
 data:
-  MYSQL_DATABASE: weatherapp
-  MYSQL_USER: admin
-  DB_HOST: db #ok
-  DB_PORT: "3306" # added
-  REDIS_USER: redis #ok
-  AUTH_HOST: auth #ok
-  AUTH_PORT: "8080" #ok
-  WEATHER_PORT: "5000" #ok
-  WEATHER_HOST: weather #ok
-  REDIS_HOST: redis #ok
+  MYSQL_DATABASE: {{ .Values.configmap.MYSQL_DATABASE }}
+  MYSQL_USER: {{ .Values.configmap.MYSQL_USER }}
+  DB_HOST: {{ .Values.configmap.DB_HOST }}
+  DB_PORT: "{{ .Values.configmap.DB_PORT }}"
+  REDIS_USER: {{ .Values.configmap.REDIS_USER }}
+  AUTH_HOST: {{ .Values.configmap.AUTH_HOST }}
+  AUTH_PORT: "{{ .Values.configmap.AUTH_PORT }}"
+  WEATHER_PORT: "{{ .Values.configmap.WEATHER_PORT }}"
+  WEATHER_HOST: {{ .Values.configmap.WEATHER_HOST }}
+  REDIS_HOST: {{ .Values.configmap.REDIS_HOST }}
+

@@ -64,7 +64,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}-db
-          image: "{{ .Values.image.repository_db }}:{{ .Values.image.tag_db | default .Chart.AppVersion }}"
+          image: {{ .Values.image.repository_db }}:{{ .Values.image.tag_db | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: MYSQL_ROOT_PASSWORD

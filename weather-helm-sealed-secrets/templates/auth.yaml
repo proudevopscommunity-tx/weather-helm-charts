@@ -31,7 +31,9 @@ spec:
       initContainers:
         - name: init-db
           image: busybox:1.31
+      {{/*
           command: ['sh', '-c', 'echo -e "Checking for the availability of Weather Server deployment"; while ! nc -z weather 5000; do sleep 1; printf "-"; done; echo -e "  >> Weather Server has started";']
+      */}}
       containers:
         - name: {{ .Chart.Name }}-auth
           securityContext:

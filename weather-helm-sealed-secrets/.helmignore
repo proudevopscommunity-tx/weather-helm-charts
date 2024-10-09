@@ -22,4 +22,10 @@
 *.tmproj
 .vscode/
 
-file
+# test files
+file.yaml
+myfile.yaml
+test.yaml
+secrets.yaml
+sealedSecrets.crt
+sealedSecrets.yaml

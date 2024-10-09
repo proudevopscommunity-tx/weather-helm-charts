@@ -9,14 +9,14 @@ image:
   repository_redis: proudevops/redis
   repository_weather: proudevops/weather
   repository_auth: proudevops/auth
-  repository_db: proudevops/db
+  repository_db: mysql
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag_ui: latest
   tag_redis: latest
   tag_weather: latest
   tag_auth: latest
-  tag_db: latest
+  tag_db: 8.0.31
 
 imagePullSecrets: []
 nameOverride: ""
@@ -140,6 +140,17 @@ env:
   redis_password: REDIS_PASSWORD
   api_key: APIKEY
 
+configmap:
+  MYSQL_DATABASE: weatherapp
+  MYSQL_USER: admin
+  DB_HOST: db 
+  DB_PORT: "3306" 
+  REDIS_USER: redis 
+  AUTH_HOST: auth 
+  AUTH_PORT: "8080" 
+  WEATHER_PORT: "5000" 
+  WEATHER_HOST: weather 
+  REDIS_HOST: redis 
 
 
 
