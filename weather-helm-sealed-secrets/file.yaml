@@ -1,0 +1,440 @@
+---
+# Source: weather/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-configmap
+data:
+  MYSQL_DATABASE: weatherapp
+  MYSQL_USER: admin
+  DB_HOST: db #ok
+  DB_PORT: "3306" # added
+  REDIS_USER: redis #ok
+  AUTH_HOST: auth #ok
+  AUTH_PORT: "8080" #ok
+  WEATHER_PORT: "5000" #ok
+  WEATHER_HOST: weather #ok
+  REDIS_HOST: redis #ok
+---
+# Source: weather/templates/db.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: alpha-db-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete # Can also be 'Retain' if you want to keep the data after deletion
+  storageClassName: manual
+  hostPath:
+    path: /var/lib/mysql # Change this to the actual path you want to use on your local machine
+---
+# Source: weather/templates/db.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alpha-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: weather/templates/auth.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  annotations:
+    # alb.ingress.kubernetes.io/healthcheck-path: /index.html
+spec:
+  selector:
+    app: alpha-auth
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: weather/templates/db.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: alpha-db
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP
+---
+# Source: weather/templates/redis.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: alpha-redis
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+  type: ClusterIP
+---
+# Source: weather/templates/ui.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-ss-ui
+  labels:
+    helm.sh/chart: weather-0.1.0
+    app.kubernetes.io/name: weather
+    app.kubernetes.io/instance: weather-ss
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: weather
+    app.kubernetes.io/instance: weather-ss-ui
+---
+# Source: weather/templates/weather.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather
+  annotations:
+    # alb.ingress.kubernetes.io/healthcheck-path: /index.html
+spec:
+  selector:
+    app: alpha-weather
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+---
+# Source: weather/templates/auth.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alpha-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpha-auth
+  template:
+    metadata:
+      labels:
+        app: alpha-auth
+    spec:
+      initContainers:
+        - name: init-db
+          image: busybox:1.31
+          command: ['sh', '-c', 'echo -e "Checking for the availability of Weather Server deployment"; while ! nc -z weather 5000; do sleep 1; printf "-"; done; echo -e "  >> Weather Server has started";']
+      containers:
+        - name: alpha-auth
+          image: proudevops/auth:latest  # leonardtia/auth:latest
+          imagePullPolicy: Always  # Set the image pull policy to Always
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: DB_HOST
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets     
+                  key: DB_PASSWORD
+            # ports:
+            # - containerPort: 8080
+---
+# Source: weather/templates/redis.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alpha-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpha-redis
+  template:
+    metadata:
+      labels:
+        app: alpha-redis
+    spec:
+      containers:
+        - name: alpha-redis
+          image: proudevops/redis:latest  # leonardtia/redis:latest
+          imagePullPolicy: Always  # Set the image pull policy to Always
+          env:
+            - name: REDIS_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap  
+                  key: REDIS_USER
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: REDIS_PASSWORD
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          hostPath:
+            path: /data/redis-data
+---
+# Source: weather/templates/ui.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-ss-ui
+  labels:
+    helm.sh/chart: weather-0.1.0
+    app.kubernetes.io/name: weather
+    app.kubernetes.io/instance: weather-ss
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: weather
+      app.kubernetes.io/instance: weather-ss-ui
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: weather-0.1.0
+        app.kubernetes.io/name: weather
+        app.kubernetes.io/instance: weather-ss-ui
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+
+    spec:
+      serviceAccountName: default
+      securityContext:
+        {}
+      containers:
+        - name: weather-ui
+          securityContext:
+            {}
+          image: "proudevops/ui-weather:latest"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: AUTH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap 
+                  key: AUTH_HOST
+            - name: AUTH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap 
+                  key: AUTH_PORT
+            - name: WEATHER_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap 
+                  key: WEATHER_HOST
+            - name: WEATHER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap 
+                  key: WEATHER_PORT
+            - name: REDIS_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap 
+                  key: REDIS_USER
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets 
+                  key: REDIS_PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap 
+                  key: REDIS_HOST
+
+
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          resources:
+            {}
+---
+# Source: weather/templates/weather.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alpha-weather
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpha-weather
+  template:
+    metadata:
+      labels:
+        app: alpha-weather
+    spec:
+      initContainers:
+        - name: init-db
+          image: busybox:1.31
+          command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z db 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";']
+      containers:
+        - name: alpha-weather
+          image: proudevops/weather:1.0.1 # leonardtia/weather:latest
+          imagePullPolicy: Always  # Set the image pull policy to Always
+          env:
+            - name: APIKEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets     
+                  key: APIKEY
+          ports:
+            - containerPort: 5000
+---
+# Source: weather/templates/db.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alpha-db-statefulset
+spec:
+  selector:
+    matchLabels:
+      app: alpha-db
+  serviceName: alpha-db-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: alpha-db
+    spec:
+      containers:
+        - name: alpha-db
+          image: mysql:8.0.31  # devopseasylearning2021/s4-db:4649
+          imagePullPolicy: Always
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap
+                  key: MYSQL_DATABASE
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-configmap
+                  key: MYSQL_USER
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/mysql
+            - name: dbcreation-script
+              mountPath: /docker-entrypoint-initdb.d #https://hub.docker.com/_/mysql Refer Initializing a fresh instance 
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: alpha-db-pvc
+        - name: dbcreation-script
+          configMap:
+            name: app-configmap
+---
+# Source: weather/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weather-ss-ui
+  labels:
+    helm.sh/chart: weather-0.1.0
+    app.kubernetes.io/name: weather
+    app.kubernetes.io/instance: weather-ss
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
+    alb.ingress.kubernetes.io/load_balancer_name: external-dns-ingress
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+    external-dns.alpha.kubernetes.io/hostname: default.tclovis.com,ui.tclovis.com
+spec:
+  ingressClassName: my-aws-ingress-class
+  rules:
+    - host: ui.tclovis.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: weather-ss-ui
+                port:
+                  number: 3000
+---
+# Source: weather/templates/sealedsecrets.yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  annotations:
+    sealedsecrets.bitnami.com/cluster-wide: "true"
+  creationTimestamp: null
+  name: app-secrets
+spec:
+  encryptedData:
+    APIKEY: AgCQN/5IeIGt6cII6FQGvZlHGNLpPskX0TDZqgTci1hMlMUIouFwB+zxwVlGrJtizvqtjeogxSFE6tDUAhBlnaGJFFQyNISR6Jd/fdvcf6Dlkveauh3nWsmG6K98kCvgkgz7aD6xfWpXIp4mUlKUEKxJRiUNErgz5iCqZKHIRCAb6YEBdJ/9SUnj46vd270BENNvtHZ086RcMsPt8SfBYT1fjhIHdz5v+c6OYVnpyoLwg/hvAqRM1thHbkL76U0WEBpICxye1bOO5CyM7f6KMxvwD7+DL+QYcyxDn+u8XNCYDZwkdA1ELcTAGvt6CWiqhDcJsbeK1hmQKXQ7DvxukqizsbkF+VvXOKPsEFq3UU+Cs/b4onmv/WUQbq/MNM46YakwfrhZUS0uvPF2ZJAMse2iw1RyIBJN3cz/SINigjMx9zMF3oGMpZSVYv7H2oIFEBwB+gjRKiJgoHP9ZGb8M2cfSnNz+OF9hikQZbqzuO2zdOvztIFpFDESJvO665LMUgNx35ZbivNYHcebShTk5GdAQQ4BiNZKRIuXXhQINXW+dAt9oah0l84bIi0v6eFmeEXFMEEOgZv5XJ/Whj6JCBUBQz8HOT57BlZ9ZsshDOIq5dEjmdCdnpwnXoyTCTU2HIIO8biKYZ4NyU7HkqUIjmqyAC5my94eJu0N1lIsMCnQbMgdjlE5/H45tKD27uptjrV6Y3mlcpcphoOegsMhcalBphwtMkEIQWMG1E6HvOklNTCNBw4ifZd+un1oDt65vt1HfA==
+    DB_PASSWORD: AgBLtS4kS8Qlo5Br5OuWatGhRE/FRdHJ9O30EGQ1tbJxh2FIah39i6xJ7zzBnVDqeuNXQD8LuOtwSyAtnfceOSrIZdhhVS+QZDZMVc1w1GRYeDISNnmUoqiwPx3BOn71ja1X0I0k9fIGGsbDqu6OSY8HOadGLC5O0NeoYO81a0/cxWZ/1zz5wcEE9LMM4LAD8TT65C2WEGgptau+BzwTLwHL/luFhX5lPBxO8CkeDDTL0yjCZBseNAcXgvU+3AZkqa3IIt1zUzs6K6Z21E4C55nf3jswZG42s1ijI7qANEmKCEhPXoAGd7e8nfSmuIj/280b8NyYSIb/Ubbeelw2dZjR9rOq4azPAyMQ+Kc6U/k8xW+aBE4AKNlzX3F7YjTIchK+VY2cxZQQALVF58Zqiz+BK8ErlUaJktNMhgFnlPEfrYFDFxNx/ipuUHbbdSzO56S+0EiNYbTVFlp1k2F3scRwGveRNY1a0NDQY11easmrNxQGn/klYBQDIBe/uGgXet0VNt4iE9uoz7L2TkJxtkJ7zeazSw7PqsXu5vv00MYSI71VTgR2QLvF5BWws2bakRekokL/sg4hDQSHrdKqM6rfKrnajrcp4Rj5fOUZJIEoOMc7SaOCkpPPHs/QcPwM5/ld1thKn1iHPriv7IQ7C5F/+/dPi7O6Z8t8GuwN/TS7FtzawJ1a2ETyCZKRNJVGpHQYyi/XNAOSrlnXVk0=
+    MYSQL_PASSWORD: AgAGQpyIXIG8bQdrvHqMFU7RQDIRO2moj+Qs+XxeuJgf2GQAG/K80gC8GLLKe4Pfl6mkDNmm88Jqtt/RUDn5f2ID94vQkzkCJbSADoOPfmUAHskHilVH+fx+DJ/JJQz425VXlPY3jtOpky1elGWKJhhohq73lb/ljYq1HDCa9rA02PojSpo2MQXfWYOyLx/gQqSXo75OuhMA2PplR+AScl58UEQh8UIrL0SqSH13BcJCf9oUt+redUXgh/vDe64z5Up9HOI0p6oWdrXWL6oap+iCt9MijD2KUd0rffCxhT2WJjLjIG6CoLQTq2MetoCRYLxo018cmm5CHceANhtxQ8AujT+Zov3MjX1z+p2S3HPad3BzzE6zGX3oJ/5C3IL1K6iziPmNv2cyj9f3Ogt+1KJbShUlgCNTNcP8Os4LgX1SAv8vWtw2vC9HLTtDuudqlrzxGfYk6Ps+8/lnqwYwJJWL80iT+mwimwCt/Hs9PZ8KOKnBqgvTMGuyEeQJbkZ9eQ5+HizPCyTrkTSTyGTylfLN+FqektSSrK8aGDhbBnd9hvjQzi8pWueZKAgP3ZmVdGYcU3+CLOkK3DsePhJGJf4c2nEip+rG6jPxegXxRIzk3FgmDGluCTjCKZGyVNhGLxYhuXtEMmamrznFooXA2Itkrl7zVKz3dMB8fvlySo5tuUhqzfHGTdiPwVlufdJwteXZyP2ZPaVfEAz3x+oMeqLfp7jPXb0/uQ==
+    MYSQL_ROOT_PASSWORD: AgA4xWgG2IfexOM4in/jC2ooJyx/xi8Ef1V2ZOmVqg2nU8T7w27LvxT/er7t1HfsBJXi+Hp90WICK3NyVuYuKWYbMeX4p0+KmgAgyW3p7J7gXiXHA9lqsYD9Ia3II5RAv7FiLerrsgZZdpBbR1LwA4jd6S99n7xw8hOckKr2jpVXkDkhF0WkyTMUnaneG7g/pDwPHu3A2EaMjAVcni20BDukyMyMT4+O23KSli4soQ17zKVjCc62Q+dkpPw07zTOluhOm+fgdtkGYD0ohJyAmk5VWHOK0ilNeVn4IbcZfUEIOTA95crjEUWka7OBDj/cuDD4pVA6FUreSx0fvx5dXFrE4Lw5gFoVrnz6nN5LpKPE3AyCHpsfdln5IrduxfzJ13dILqYgKqU85/pxNqZHv8//qIToKFUgpoitbtRcq87TDgt97khhFf7WzX4/jegOiqT55JU4LP69CNR2n2H2ramHF9JTZEdwmJeIeVqUpLCTfr9acb21tCsTQvRj03jKfaNs1Lfh7TFGkp3Piyy2O/att0t31IN6J1s/59hQjL/0kZRGK4uJGi+MTbRObAs49VTKA5uvbaMdO1WsCmv+Vfkz/l20QWAlkySW8guqXRHYpepNgHZLJ6oowLo9hxJHq8zoev5bnGzJ6u5iMUhIYyUiRZtAoU5ViOY0i1wT9LD2ro4S1iXJ27C2Dqe4ljeOrijsvFTugJg79lvIfOM=
+    REDIS_PASSWORD: AgCssFGRmUH0yl6AQ6/2xIjTaT9UUpXzN0LDcAM6TWEWeqUONFGErMXAsPr+7/HhB+f23cC/TBAqUGQTC3JnJz4LLVoYL27UlmABmj8xH4BZrhQTJ9OuI9kCUXwaa4eQ4dJONpa9n+UB+/MlsL18aU2xscFEFErtvp4qfa3hAH25RsvrhL5U/dUrb781HH9hu20bNFwoM2NTY9dBk2GMCR5jaMUMCH077DB5NH5Ddk6qLK67r5NAauXHgVsqyxOfrVAtZNAN1L6jEDb37IKKznxSHm+Z0GPO0wTmJwMA9D6gU456z+Z3gH29/S4Dp3uCgvhgOj1Jsc/0+/7BSK54B9jUDXFXo/q8s5JXJEL35rzEq3y/5QJfv5l2yH1H6NZzXkCeLRkCPELbUtKaLO/pSqkfmIJjQxc2oT2WEb53FqKhihl3L9VJnRsCTj1s5y58FlVlidILCgEnRcjaA3+pygfBxiHhjo23KSBE/tG6X6bWatirVCI2HtXPM5YHSg6ppHr/SGB/Fn/1upb6CAXp2FxY09NB/Iy045Bbhw/y4JnwfSJ77OYMAF8jGunCE6gt1W6zFHEBeXRUW1RPhcJnq02enRvZ96QeVyY4hBlbUYD5FmdER8fza6sMlWeU60Xb+6wGhVfZgHXp0gL6wwm8KbgUMbqzJzklXKJqyMBTu2mb1a/u5lq6x1kGiFufJY9mv5rnYbGh1Q==
+  template:
+    metadata:
+      annotations:
+        sealedsecrets.bitnami.com/cluster-wide: "true"
+      creationTimestamp: null
+      name: app-secrets
+    type: Opaque

@@ -27,5 +27,5 @@ file.yaml
 myfile.yaml
 test.yaml
 secrets.yaml
-sealedSecrets.crt
+sealedSecret.crt
 sealedSecrets.yaml
