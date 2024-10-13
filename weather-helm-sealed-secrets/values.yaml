@@ -16,7 +16,7 @@ image:
   tag_redis: latest
   tag_weather: latest
   tag_auth: latest
-  tag_db: 8.0.31
+  tag_db: 5.7.9
 
 imagePullSecrets: []
 nameOverride: ""
