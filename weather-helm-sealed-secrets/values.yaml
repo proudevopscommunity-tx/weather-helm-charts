@@ -152,6 +152,14 @@ configmap:
   WEATHER_HOST: weather 
   REDIS_HOST: redis 
 
+pvc:
+  storage: "1Gi"
+  mode: Filesystem
+  access_mode: ReadWriteOnce
+  policy: Delete
+  class_name: manual
+  path: "/var/lib/mysql"
+
 
 
 nodeSelector: {}
