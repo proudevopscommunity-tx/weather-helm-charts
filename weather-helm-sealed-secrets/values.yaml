@@ -59,7 +59,7 @@ service:
 
 ingress:
   enabled: true
-  className: my-aws-ingress-class #alb
+  className: alb #my-aws-ingress-class #alb
   annotations: 
     alb.ingress.kubernetes.io/load_balancer_name: external-dns-ingress
     alb.ingress.kubernetes.io/scheme: internet-facing
@@ -157,7 +157,7 @@ pvc:
   mode: Filesystem
   access_mode: ReadWriteOnce
   policy: Delete
-  class_name: manual
+  class_name: manual #gp2-storage #manual
   path: "/var/lib/mysql"
 
 
