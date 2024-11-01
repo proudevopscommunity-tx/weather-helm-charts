@@ -48,7 +48,7 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type_ui: ClusterIP
+  type_ui: NodePort
   type: ClusterIP
   port_ui: 3000
   target_port_ui: 3000
@@ -157,7 +157,7 @@ pvc:
   mode: Filesystem
   access_mode: ReadWriteOnce
   policy: Delete
-  class_name: manual #gp2-storage #manual
+  class_name: gp2-storage #manual
   path: "/var/lib/mysql"
 
 

@@ -1,9 +1,9 @@
-# apiVersion: storage.k8s.io/v1
-# kind: StorageClass
-# metadata:
-#   name: gp2-storage
-# provisioner: ebs.csi.aws.com # EBS CSI Driver provisioner
-# parameters:
-#   type: gp2
-# reclaimPolicy: Delete
-# volumeBindingMode: Immediate  # WaitForFirstConsumer
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp2-storage
+provisioner: ebs.csi.aws.com # EBS CSI Driver provisioner
+parameters:
+  type: gp2
+reclaimPolicy: Delete
+volumeBindingMode: Immediate  # WaitForFirstConsume
