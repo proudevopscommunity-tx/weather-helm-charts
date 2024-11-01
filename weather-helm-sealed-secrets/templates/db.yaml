@@ -74,21 +74,7 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: MYSQL_ROOT_PASSWORD
-            - name: MYSQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: MYSQL_PASSWORD
-            - name: MYSQL_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: app-configmap
-                  key: MYSQL_DATABASE
-            - name: MYSQL_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: app-configmap
-                  key: MYSQL_USER
+                  
           ports:
             - containerPort: {{ .Values.service.port_db }}
           volumeMounts:
@@ -110,7 +96,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "weather.fullname" . }}-db
+  name: db
   labels:
     {{- include "weather.labels" . | nindent 4 }}
 spec:

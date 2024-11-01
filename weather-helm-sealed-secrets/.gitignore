@@ -2,6 +2,6 @@
 file.yaml
 myfile.yaml
 test.yaml
-secrets.yaml
+# secrets.yaml
 sealedSecret.crt
 sealedsecrets.yaml

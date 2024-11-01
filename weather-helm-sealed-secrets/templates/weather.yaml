@@ -48,7 +48,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "weather.fullname" . }}-weather
+  name: weather
   labels:
     {{- include "weather.labels" . | nindent 4 }}
 spec:
