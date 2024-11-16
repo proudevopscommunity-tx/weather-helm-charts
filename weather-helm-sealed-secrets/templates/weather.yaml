@@ -48,7 +48,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: weather
+  name: {{ .Values.configmap.WEATHER_HOST }}
   labels:
     {{- include "weather.labels" . | nindent 4 }}
 spec:

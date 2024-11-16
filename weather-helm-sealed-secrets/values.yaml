@@ -151,6 +151,7 @@ configmap:
   WEATHER_PORT: "5000" 
   WEATHER_HOST: weather 
   REDIS_HOST: redis 
+  UI_HOST: ui
 
 pvc:
   storage: "1Gi"

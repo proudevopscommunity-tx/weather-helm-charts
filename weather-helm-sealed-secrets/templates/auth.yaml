@@ -57,7 +57,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth
+  name: {{ .Values.configmap.AUTH_HOST }}
   labels:
     {{- include "weather.labels" . | nindent 4 }}
   annotations:
