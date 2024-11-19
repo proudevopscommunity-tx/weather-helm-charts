@@ -57,36 +57,31 @@ service:
   port_redis: 6379
   port_db: 3306
 
+
+
 ingress:
-  enabled: true
-  className: alb #my-aws-ingress-class #alb
-  annotations: 
-    alb.ingress.kubernetes.io/load_balancer_name: external-dns-ingress
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    # Heath check settings
-    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP 
-    alb.ingress.kubernetes.io/healthcheck-port: traffic-port  
-    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
-    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
-    alb.ingress.kubernetes.io/success-codes: '200'
-    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
-    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
-    # SSL settings
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
-    # External dns settings
-    external-dns.alpha.kubernetes.io/hostname: default.tclovis.com,ui.tclovis.com
-  hosts:
-    - host: ui.tclovis.com
-      paths:
-        - path: /
-          pathType: Prefix
-          
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+  host: ui.tclovis.com
+  ingressClass: alb
+  groupName: myapps
+  groupOrder: "10"
+
+
+annotations:
+   alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+   alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+   alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+   alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+   alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+   alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
+   alb.ingress.kubernetes.io/load_balancer_name: extiernal-dns-ingress
+   alb.ingress.kubernetes.io/scheme: internet-facing
+   alb.ingress.kubernetes.io/ssl-redirect: "443"
+   alb.ingress.kubernetes.io/success-codes: "200"
+   alb.ingress.kubernetes.io/target-type: ip
+   alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+   external-dns.alpha.kubernetes.io/hostname: default.tclovis.com,ui.tclovis.com
+
+
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
