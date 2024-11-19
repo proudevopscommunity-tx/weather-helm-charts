@@ -80,7 +80,8 @@ annotations:
    alb.ingress.kubernetes.io/target-type: ip
    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
    external-dns.alpha.kubernetes.io/hostname: default.tclovis.com,ui.tclovis.com
-
+   alb.ingress.kubernetes.io/group.name: myapps
+   alb.ingress.kubernetes.io/group.order: '10'
 
 
 resources: {}
